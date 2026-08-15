@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --color-orchid-50: #f3f8f4;
+  --color-orchid-100: #e3efe7;
+  --color-orchid-200: #c5dfce;
+  --color-orchid-300: #97c4a8;
+  --color-orchid-400: #63a37c;
+  --color-orchid-500: #3f8260;
+  --color-orchid-600: #2f6850;
+  --color-orchid-700: #285440;
+  --color-orchid-800: #234437;
+  --color-orchid-900: #1d3830;
+  --color-leaf-500: #5b8c3e;
+  --color-bloom-500: #c2569b;
+}
+
+:root {
+  --background: #f6f9f6;
+  --foreground: #16271d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Renderização de Markdown do acervo */
+.md {
+  color: #2a3f31;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.md h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #234437;
+  margin: 1rem 0 0.5rem;
+}
+.md h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #285440;
+  margin: 0.8rem 0 0.4rem;
+}
+.md p {
+  margin: 0.5rem 0;
+}
+.md ul {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.md li {
+  margin: 0.25rem 0;
+}
+.md strong {
+  font-weight: 700;
+  color: #1d3830;
+}

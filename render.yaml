@@ -1,0 +1,62 @@
+# Render.com — Infrastructure as Code para o Orquideas SaaS
+# Deploy: conecte este repo no Render (Web Service) e ele usará este arquivo.
+# Documentação: https://render.com/docs/yaml-spec
+#
+# Decisão: SQLite no disco efêmero do Render (sem mudar o dev local, que também é
+# SQLite). Para produção real, troque para Postgres — ver nota no final do arquivo.
+
+services:
+  - type: web
+    name: orquideas
+    runtime: node
+    plan: free
+    region: oregon
+    # Ajuste a branch se não for "main"
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /login
+    envVars:
+      # SQLite local no disco da instância (recriado a cada deploy).
+      - key: DATABASE_URL
+        value: file:./prod.db
+      - key: NODE_ENV
+        value: production
+      # Secrets — definir no painel do Render (não vão para o repo).
+      - key: AUTH_SECRET
+        sync: false
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_SANDBOX
+        value: "false"
+      - key: ASAAS_API_URL
+        value: https://www.asaas.com/api/v3
+      - key: ASAAS_WEBHOOK_TOKEN
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
+# ---------------------------------------------------------------------------
+# UPGRADE PARA POSTGRES (produção real / dados persistentes):
+# 1) No Render, crie um "PostgreSQL" (free) e anote a Internal/External URL.
+# 2) Em prisma/schema.prisma: datasource db { provider = "postgresql" ... }
+# 3) Troque o bloco acima por:
+#      envVars:
+#        - key: DATABASE_URL
+#          fromDatabase:
+#            name: orquideas-db
+#            property: connectionString
+#        - key: NODE_ENV
+#          value: production
+#        ... (demais secrets iguais)
+#    e adicione o bloco:
+#      databases:
+#        - name: orquideas-db
+#          databaseName: orquideas
+#          user: orquideas
+#          plan: free
+# 4) Para dev local com Postgres, use docker-compose ou um Postgres local e
+#    ajuste DATABASE_URL no .env.
+# ---------------------------------------------------------------------------

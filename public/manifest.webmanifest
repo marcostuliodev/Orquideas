@@ -1,0 +1,12 @@
+{
+  "name": "Orquídeas — Cultivo Inteligente",
+  "short_name": "Orquídeas",
+  "description": "Cultivo de orquídeas: acervo, clima e controle de mudas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f9f6",
+  "theme_color": "#2f6850",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,198 @@
+// Prisma schema — Orquídeas SaaS
+// Dev: SQLite (zero-config). Produção: trocar provider para "postgresql"
+// e ajustar DATABASE_URL. Enums/arrays são modelados como String/Json
+// para manter compatibilidade com SQLite.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  passwordHash    String
+  plan            String   @default("free") // free | pro | premium
+  cpfCnpj         String? // necessário para criar cliente na Asaas (produção)
+  asaasCustomerId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  orchids           Orchid[]
+  observations      Observation[]
+  subscriptions     Subscription[]
+  recurringReminders RecurringReminder[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+}
+
+model Subscription {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String    @default("asaas")
+  externalId        String? @unique // id da assinatura no gateway
+  plan              String // free | pro | premium
+  status            String    @default("pending") // active | canceled | pending | past_due
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Muda / planta (suporta hobbyista e produtor comercial)
+model Orchid {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String // nome de identificação da muda/planta
+  species     String? // espécie (ex.: Phalaenopsis)
+  hybrid      String? // híbrido / cultivar
+  origin      String? // compra | troca | seedling | divisão | autopolinização
+  acquiredAt  DateTime?
+  stage       String   @default("seedling") // seedling | juvenile | adult | blooming
+  parentInfo  String? // genealogia (genética dos pais)
+  batch       String? // lote (uso comercial)
+  location    String? // onde está (estufa A, bancada 2...)
+  photos      Json // array de { url, caption? }
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  careLogs           CareLog[]
+  reminders          Reminder[]
+  cultivationEvents  CultivationEvent[]
+  recurringReminders RecurringReminder[]
+
+  @@index([userId])
+  @@index([stage])
+}
+
+// Registro de cuidado (rega, adubação, tratamento, observação, transplante)
+model CareLog {
+  id        String   @id @default(cuid())
+  orchidId  String
+  orchid    Orchid   @relation(fields: [orchidId], references: [id], onDelete: Cascade)
+  type      String // water | fertilize | treat | observe | repot
+  date      DateTime @default(now())
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([orchidId])
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  orchidId  String
+  orchid    Orchid   @relation(fields: [orchidId], references: [id], onDelete: Cascade)
+  type      String // water | fertilize | treat | repot | custom
+  dueDate   DateTime
+  done      Boolean  @default(false)
+  note      String?
+  createdAt DateTime @default(now())
+
+  // Vinculação opcional a um lembrete recorrente (gerado pelo scheduler).
+  recurringReminderId String?
+  recurringReminder   RecurringReminder? @relation(fields: [recurringReminderId], references: [id], onDelete: SetNull)
+
+  @@index([orchidId])
+  @@index([dueDate])
+  @@index([recurringReminderId])
+}
+
+// Evento de cultivo (rega, adubação, floração, tratamento, transplante, medição, foto, nota).
+model CultivationEvent {
+  id         String   @id @default(cuid())
+  orchidId   String
+  orchid     Orchid   @relation(fields: [orchidId], references: [id], onDelete: Cascade)
+  type       String // water | fertilize | bloom | treat | repot | measure | photo | note
+  occurredAt DateTime @default(now())
+  title      String?
+  note       String?
+  payload    Json? // metadados livres (ex.: medições, condições)
+  photos     Json    @default("[]") // array de { url, caption? }
+  createdAt  DateTime @default(now())
+
+  @@index([orchidId])
+  @@index([type])
+  @@index([occurredAt])
+}
+
+// Lembrete recorrente (gera Reminders e Notifications via scheduler).
+model RecurringReminder {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orchidId   String? // se nulo, é um lembrete geral do usuário
+  orchid     Orchid?   @relation(fields: [orchidId], references: [id], onDelete: Cascade)
+  type       String // water | fertilize | treat | repot | custom
+  freq       String // daily | weekly | monthly | custom
+  intervalN  Int       @default(1)
+  anchorDate DateTime  @default(now())
+  nextDueAt  DateTime  @default(now())
+  endAfter   DateTime?
+  active     Boolean   @default(true)
+  note       String?
+  lastGenAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  reminders  Reminder[]
+
+  @@index([userId, nextDueAt])
+}
+
+// Notificação in-app.
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  link      String?
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+}
+
+// Inscrição para Web Push (Web Push API / VAPID).
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+
+  @@index([userId])
+}
+
+// Observação meteorológica manual do usuário (sem dependência de API externa)
+model Observation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  region    String // norte | nordeste | centro-oeste | sudeste | sul
+  city      String?
+  date      DateTime @default(now())
+  tempMin   Float?
+  tempMax   Float?
+  humidity  Float? // %
+  rainfall  Float? // mm
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([date])
+}
