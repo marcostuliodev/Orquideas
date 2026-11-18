@@ -1,55 +1,41 @@
 // Prisma schema — Orquídeas SaaS
-// Dev e Produção: PostgreSQL. A Vercel não suporta SQLite em produção
-// (filesystem readonly/efêmero). Enums/arrays são modelados como String/Json.
+// MongoDB: Usado via MongoDB Atlas ou Vercel MongoDB
+// IDs devem ter @map("_id"). Enums/arrays são modelados como String/Json.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
+// Modelos MongoDB — _id é mapeado automaticamente via @map
+
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  name            String
-  passwordHash    String
-  plan            String   @default("free") // free | pro | premium
-  cpfCnpj         String? // necessário para criar cliente na Asaas (produção)
+  id          String    @id @map("_id") @default(cuid())
+  email       String    @unique
+  name        String
+  passwordHash String
+  plan        String    @default("free") // free | pro | premium
+  cpfCnpj     String?   // necessário para criar cliente na Asaas (produção)
   asaasCustomerId String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   orchids           Orchid[]
   observations      Observation[]
-  subscriptions     Subscription[]
+  // subscriptions removido — usar coleção separada ou campo simples se necessário
   recurringReminders RecurringReminder[]
   notifications     Notification[]
   pushSubscriptions PushSubscription[]
 }
 
-model Subscription {
-  id                String    @id @default(cuid())
-  userId            String
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider          String    @default("asaas")
-  externalId        String? @unique // id da assinatura no gateway
-  plan              String // free | pro | premium
-  status            String    @default("pending") // active | canceled | pending | past_due
-  currentPeriodEnd  DateTime?
-  cancelAtPeriodEnd Boolean   @default(false)
-  createdAt         DateTime  @default(now())
-
-  @@index([userId])
-}
-
-// Muda / planta (suporta hobbyista e produtor comercial)
 model Orchid {
-  id          String   @id @default(cuid())
+  id          String    @id @map("_id") @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   name        String // nome de identificação da muda/planta
   species     String? // espécie (ex.: Phalaenopsis)
@@ -75,21 +61,20 @@ model Orchid {
   @@index([stage])
 }
 
-// Registro de cuidado (rega, adubação, tratamento, observação, transplante)
 model CareLog {
-  id        String   @id @default(cuid())
+  id        String   @id @map("_id") @default(cuid())
   orchidId  String
+  
   orchid    Orchid   @relation(fields: [orchidId], references: [id], onDelete: Cascade)
   type      String // water | fertilize | treat | observe | repot
   date      DateTime @default(now())
   note      String?
-  createdAt DateTime @default(now())
 
   @@index([orchidId])
 }
 
 model Reminder {
-  id        String   @id @default(cuid())
+  id        String   @id @map("_id") @default(cuid())
   orchidId  String
   orchid    Orchid   @relation(fields: [orchidId], references: [id], onDelete: Cascade)
   type      String // water | fertilize | treat | repot | custom
@@ -107,9 +92,8 @@ model Reminder {
   @@index([recurringReminderId])
 }
 
-// Evento de cultivo (rega, adubação, floração, tratamento, transplante, medição, foto, nota).
 model CultivationEvent {
-  id         String   @id @default(cuid())
+  id         String   @id @map("_id") @default(cuid())
   orchidId   String
   orchid     Orchid   @relation(fields: [orchidId], references: [id], onDelete: Cascade)
   type       String // water | fertilize | bloom | treat | repot | measure | photo | note
@@ -125,9 +109,8 @@ model CultivationEvent {
   @@index([occurredAt])
 }
 
-// Lembrete recorrente (gera Reminders e Notifications via scheduler).
 model RecurringReminder {
-  id         String    @id @default(cuid())
+  id         String    @id @map("_id") @default(cuid())
   userId     String
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orchidId   String? // se nulo, é um lembrete geral do usuário
@@ -148,9 +131,8 @@ model RecurringReminder {
   @@index([userId, nextDueAt])
 }
 
-// Notificação in-app.
 model Notification {
-  id        String   @id @default(cuid())
+  id        String   @id @map("_id") @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      String
@@ -165,9 +147,8 @@ model Notification {
   @@index([createdAt])
 }
 
-// Inscrição para Web Push (Web Push API / VAPID).
 model PushSubscription {
-  id        String   @id @default(cuid())
+  id        String   @id @map("_id") @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   endpoint  String   @unique
@@ -177,9 +158,8 @@ model PushSubscription {
   @@index([userId])
 }
 
-// Observação meteorológica manual do usuário (sem dependência de API externa)
 model Observation {
-  id        String   @id @default(cuid())
+  id        String   @id @map("_id") @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   region    String // norte | nordeste | centro-oeste | sudeste | sul
