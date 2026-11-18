@@ -8,6 +8,10 @@ const nextConfig = {
     // Ignora erros de tipo no build da Vercel (validação feita localmente)
     ignoreBuildErrors: true,
   },
+  eslint: {
+    // Ignora lint no build da Vercel (validação feita localmente via npm run lint)
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
