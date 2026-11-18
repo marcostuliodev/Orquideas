@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm install && npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": ["gru1"],
+  "env": {
+    "DATABASE_URL": "@orquideas-db",
+    "NODE_ENV": "production"
+  },
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

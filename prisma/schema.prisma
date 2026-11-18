@@ -1,14 +1,13 @@
 // Prisma schema — Orquídeas SaaS
-// Dev: SQLite (zero-config). Produção: trocar provider para "postgresql"
-// e ajustar DATABASE_URL. Enums/arrays são modelados como String/Json
-// para manter compatibilidade com SQLite.
+// Dev e Produção: PostgreSQL. A Vercel não suporta SQLite em produção
+// (filesystem readonly/efêmero). Enums/arrays são modelados como String/Json.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
